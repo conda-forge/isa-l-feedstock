@@ -11,7 +11,8 @@ source:
         # Conda adds some CFLAGS to the environment which are not properly 
         # filtered by the original nasm-filter.sh
         # This patch also makes sure the nasm executable from the BUILD_PREFIX is used.
-        - nasm-filter.patch
+        - nasm-filter.patch  # [linux]
+        - nasm-filter.mac.patch  # [osx]
 
 build:
     # Package is buildable on windows. But current maintainer can not test and maintain that.
