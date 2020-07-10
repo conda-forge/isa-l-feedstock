@@ -16,7 +16,7 @@ source:
 build:
     # Package is buildable on windows. But current maintainer can not test and maintain that.
     skip: True  # [not unix]  
-    number: 0
+    number: 1
 
 
 requirements:
