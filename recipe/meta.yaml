@@ -11,11 +11,11 @@ source:
         # Conda adds some CFLAGS to the environment which are not properly 
         # filtered by the original nasm-filter.sh
         # This patch also makes sure the nasm executable from the BUILD_PREFIX is used.
-        - nasm-filter.patch
+        - nasm-filter.patch  # [linux]
 
 build:
     # Package is buildable on windows and mac osx. But current maintainer can not test and maintain that.
-    skip: True  # [not linux]  
+    skip: True  # [osx]  
     number: 0
 
 
@@ -23,10 +23,10 @@ requirements:
     build:
         - {{ compiler('c') }}
         - nasm
-        - autoconf
-        - automake
-        - libtool
-        - make
+        - autoconf  # [unix]
+        - automake  # [unix]
+        - libtool  # [unix]
+        - make  # [unix]
 
 test:
     files:
@@ -36,8 +36,8 @@ test:
         # Test compression and decompression. 
         - igzip -k LICENSE
         # Original file should be larger than compressed file.
-        - bash -c '[ $(stat -c %s LICENSE) -gt $(stat -c %s LICENSE.gz) ]'
-        - bash -c '[ "$(igzip -cd LICENSE.gz)" == "$(cat LICENSE)" ]'
+        - bash -c '[ $(stat -c %s LICENSE) -gt $(stat -c %s LICENSE.gz) ]'  # [unix]
+        - bash -c '[ "$(igzip -cd LICENSE.gz)" == "$(cat LICENSE)" ]'  # [unix]
 
 about:
     home: https://software.intel.com/content/www/us/en/develop/tools/isa-l.html
