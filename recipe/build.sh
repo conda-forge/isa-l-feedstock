@@ -8,7 +8,7 @@ export AS=nasm
 ./autogen.sh
 ./configure --prefix=${PREFIX}
 
-make -j${CPU_COUNT} ${VERBOSE_AT}
+make -d -j${CPU_COUNT} ${VERBOSE_AT}
 make check
 make install
 
