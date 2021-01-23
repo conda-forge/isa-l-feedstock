@@ -8,8 +8,7 @@ export AS=nasm
 ./autogen.sh
 ./configure --prefix=${PREFIX}
 
-make -d -j${CPU_COUNT} ${VERBOSE_AT}
-make check
+make -j${CPU_COUNT} ${VERBOSE_AT}
 make install
 
 # Remove man pages
