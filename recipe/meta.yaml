@@ -15,14 +15,14 @@ source:
 
 build:
     # Package is buildable on windows and mac osx. But current maintainer can not test and maintain that.
-  skip: true  # [not linux]
-  number: 0
+  skip: true  # [not unix]
+  number: 1
 
 
 requirements:
   build:
     - {{ compiler('c') }}
-    - nasm
+    - nasm >=2.14
     - autoconf
     - automake
     - libtool
