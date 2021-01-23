@@ -22,7 +22,7 @@ build:
 requirements:
   build:
     - {{ compiler('c') }}
-    - nasm
+    - nasm >=2.14
     - autoconf
     - automake
     - libtool
