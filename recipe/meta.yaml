@@ -14,15 +14,13 @@ source:
     - nasm-filter.patch
 
 build:
-    # Package is buildable on windows and mac osx. But current maintainer can not test and maintain that.
-  skip: true  # [osx]
-  number: 1
+  number: 2
 
 
 requirements:
   build:
     - {{ compiler('c') }}
-    - nasm
+    - nasm >=2.14
     - autoconf  # [unix]
     - automake  # [unix]
     - libtool  # [unix]
