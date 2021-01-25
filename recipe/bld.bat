@@ -1,6 +1,9 @@
 nmake /f Makefile.nmake
 if errorlevel 1 exit 1
 
+nmake igzip.exe /f Makefile.nmake
+if errorlevel 1 exit 1
+
 copy igzip.exe "%LIBRARY_BIN%\igzip.exe"
 if errorlevel 1 exit 1
 
