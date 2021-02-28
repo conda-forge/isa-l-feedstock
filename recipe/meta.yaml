@@ -14,28 +14,34 @@ source:
     - nasm-filter.patch
 
 build:
-  number: 2
+=======
+  number: 3
 
 
 requirements:
   build:
-    - {{ compiler('c') }}
-    - nasm >=2.14
+    # igzip needs to be compiled with 7.5.0 to prevent an issue:
+    # https://github.com/conda-forge/isa-l-feedstock/issues/7
+    - {{ compiler('c') }}  # [not linux]
+    - gcc_linux-64 ==7.5.0  # [linux]
+    - nasm  # [linux]
+    # Osx needs some flags that are available from 2.14 on
+    - nasm >=2.14  # [osx]
     - autoconf  # [unix]
     - automake  # [unix]
-    - libtool  # [unix]
-    - make  # [unix]
+    - libtool   # [unix]
+    - make      # [unix]
 
 test:
   files:
     - LICENSE
   commands:
-    - igzip --help
+    - igzip --help  # [unix]
         # Test compression and decompression. 
-    - igzip -k LICENSE
+    - igzip -k LICENSE  # [unix]
         # Original file should be larger than compressed file.
-    - bash -c '[ $(stat -c %s LICENSE) -gt $(stat -c %s LICENSE.gz) ]'
-    - bash -c '[ "$(igzip -cd LICENSE.gz)" == "$(cat LICENSE)" ]'
+    - bash -c '[ $(stat -c %s LICENSE) -gt $(stat -c %s LICENSE.gz) ]'  # [unix]
+    - bash -c '[ "$(igzip -cd LICENSE.gz)" == "$(cat LICENSE)" ]'  # [unix]
 
 about:
   home: https://software.intel.com/content/www/us/en/develop/tools/isa-l.html
@@ -52,7 +58,7 @@ about:
     Raid - calculate and operate on XOR and P+Q parity found in common RAID implementations.
     Compression - Fast deflate-compatible data compression.
     De-compression - Fast inflate-compatible data compression.
-    This package includes the igzip program.
+    This package includes the igzip program on Linux and MacOS.
 
   doc_url: https://github.com/intel/isa-l/wiki/
   dev_url: https://github.com/intel/isa-l
