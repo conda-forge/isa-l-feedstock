@@ -6,15 +6,6 @@ REM set INCLUDE="%INCLUDE%;%CONDA_PREFIX%\Library\share\vcpkg\installed\x86-wind
 nmake /f Makefile.nmake
 if errorlevel 1 exit 1
 
-REM nmake igzip.exe /f Makefile.nmake
-REM if errorlevel 1 exit 1
-
-REM copy igzip.exe "%LIBRARY_BIN%\igzip.exe"
-REM if errorlevel 1 exit 1
-
-copy include\isa-l.h %LIBRARY_INCLUDE%\isa-l.h
-if errorlevel 1 exit 1
-
 mkdir %LIBRARY_INCLUDE%\isa-l
 if errorlevel 1 exit 1
 
