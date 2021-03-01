@@ -23,7 +23,7 @@ requirements:
     # https://github.com/conda-forge/isa-l-feedstock/issues/7
     - {{ compiler('c') }}  # [not linux]
     - gcc_linux-64 ==7.5.0  # [linux]
-    - nasm  # [linux]
+    - nasm  # [not osx]
     # Osx needs some flags that are available from 2.14 on
     - nasm >=2.14  # [osx]
     - autoconf  # [unix]
