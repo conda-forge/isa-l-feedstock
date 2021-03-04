@@ -20,7 +20,7 @@ CRC - Fast implementations of cyclic redundancy check. Six different polynomials
 Raid - calculate and operate on XOR and P+Q parity found in common RAID implementations.
 Compression - Fast deflate-compatible data compression.
 De-compression - Fast inflate-compatible data compression.
-This package includes the igzip program.
+This package includes the igzip program on Linux and MacOS.
 
 
 Current build status
