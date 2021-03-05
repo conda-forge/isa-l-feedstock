@@ -9,6 +9,3 @@ if errorlevel 1 exit 1
 
 copy isa-l.lib %LIBRARY_LIB%\isa-l.lib
 if errorlevel 1 exit 1
-
-copy isa-l_static.lib %LIBRARY_LIB%\isa-l_static.lib
-if errorlevel 1 exit 1

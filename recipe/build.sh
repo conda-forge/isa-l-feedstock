@@ -13,3 +13,5 @@ make install
 
 # Remove man pages
 rm -rf ${PREFIX}/share
+# Remove static library
+rm ${PREFIX}/lib/libisal.a
