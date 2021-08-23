@@ -18,6 +18,8 @@ build:
 
 
 requirements:
+  host: 
+    - getopt-win32  # [win]
   build:
     # igzip needs to be compiled with 7.5.0 to prevent an issue:
     # https://github.com/conda-forge/isa-l-feedstock/issues/7
@@ -30,7 +32,6 @@ requirements:
     - automake  # [unix]
     - libtool   # [unix]
     - make      # [unix]
-    - getopt-win32  # [win]
 test:
   files:
     - LICENSE
