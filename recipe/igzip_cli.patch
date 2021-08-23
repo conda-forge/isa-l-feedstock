@@ -1,0 +1,13 @@
+diff --git a/programs/igzip_cli.c b/programs/igzip_cli.c
+index 53124af..25edd2b 100644
+--- a/programs/igzip_cli.c
++++ b/programs/igzip_cli.c
+@@ -34,7 +34,7 @@
+ #include <string.h>
+ #include <getopt.h>
+ #include <sys/stat.h>
+-#include <utime.h>
++#include <sys/utime.h>
+ #include <unistd.h>
+ #include <stdbool.h>
+ #include <stdarg.h>

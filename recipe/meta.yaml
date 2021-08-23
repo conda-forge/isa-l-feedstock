@@ -12,14 +12,13 @@ source:
         # filtered by the original nasm-filter.sh
         # This patch also makes sure the nasm executable from the BUILD_PREFIX is used.
     - nasm-filter.patch
-
+    # utime.h -> sys/utime.h for windows
+    - igzip_cli.patch  # [win]
 build:
   number: 5
 
 
 requirements:
-  host: 
-    - getopt-win32  # [win]
   build:
     # igzip needs to be compiled with 7.5.0 to prevent an issue:
     # https://github.com/conda-forge/isa-l-feedstock/issues/7
@@ -32,6 +31,9 @@ requirements:
     - automake  # [unix]
     - libtool   # [unix]
     - make      # [unix]
+  host: 
+    - getopt-win32  # [win]
+
 test:
   files:
     - LICENSE
