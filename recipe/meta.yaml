@@ -30,12 +30,12 @@ requirements:
     - automake  # [unix]
     - libtool   # [unix]
     - make      # [unix]
-
+    - getopt-win32 # [win]
 test:
   files:
     - LICENSE
   commands:
-    - igzip --help  # [unix]
+    - igzip --help
         # Test compression and decompression. 
     - igzip -k LICENSE  # [unix]
         # Original file should be larger than compressed file.
