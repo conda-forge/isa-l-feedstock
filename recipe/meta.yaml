@@ -23,7 +23,8 @@ requirements:
     # igzip needs to be compiled with 7.5.0 to prevent an issue:
     # https://github.com/conda-forge/isa-l-feedstock/issues/7
     - {{ compiler('c') }}  # [osx]
-    - m2w64-gcc # [win]
+    - m2w64-gcc  # [win]
+    - m2w64-toolchain  # [win]
     - gcc_linux-64 ==7.5.0  # [linux]
     - nasm  # [not osx]
     # Osx needs some flags that are available from 2.14 on
@@ -32,7 +33,8 @@ requirements:
     - automake  # [unix]
     - libtool   # [unix]
     - make      # [unix]
-  host: 
+  host:
+    - m2w64-gcc-libs  # [win]
     - getopt-win32  # [win]
 
 test:
