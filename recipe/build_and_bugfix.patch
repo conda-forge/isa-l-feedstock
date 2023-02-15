@@ -1,0 +1,330 @@
+diff --git a/Makefile.nmake b/Makefile.nmake
+index 6360d1f..cf382b4 100644
+--- a/Makefile.nmake
++++ b/Makefile.nmake
+@@ -165,8 +165,8 @@ objs = \
+ INCLUDES   = -I./ -Ierasure_code/ -Iraid/ -Icrc/ -Iigzip/ -Iprograms/ -Imem/ -Iinclude/ -Itests/fuzz/ -Iexamples/ec/
+ # Modern asm feature level, consider upgrading nasm/yasm before decreasing feature_level
+ FEAT_FLAGS = -DHAVE_AS_KNOWS_AVX512 -DAS_FEATURE_LEVEL=10
+-CFLAGS_REL = -O2 -DNDEBUG /Z7 /MD /Gy
+-CFLAGS_DBG = -Od -DDEBUG /Z7 /MDd
++CFLAGS_REL = -O2 -DNDEBUG /Z7 /Gy
++CFLAGS_DBG = -Od -DDEBUG /Z7
+ LINKFLAGS  = -nologo -incremental:no -debug
+ CFLAGS     = $(CFLAGS_REL) -nologo -D_USE_MATH_DEFINES $(FEAT_FLAGS) $(INCLUDES) $(D)
+ AFLAGS     = -f win64 $(FEAT_FLAGS) $(INCLUDES) $(D)
+@@ -175,8 +175,8 @@ CC         = cl
+ AS         = nasm
+ 
+ lib: bin static dll
+-static: bin isa-l_static.lib
+-dll: bin isa-l.dll
++static: bin isa-l_static.lib isa-l.h
++dll: bin isa-l.dll isa-l.h
+ 
+ bin: ; -mkdir $@
+ 
+@@ -185,11 +185,20 @@ isa-l_static.lib: $(objs)
+ $?
+ <<
+ 
++!IF [rc] == 0
++isa-l.dll: isa-l.res
++!ELSE
++!MESSAGE Optionally install rc to set file version info
++!ENDIF
++
+ isa-l.dll: $(objs)
+ 	link -out:$@ -dll -def:isa-l.def $(LINKFLAGS) @<<
+ $?
+ <<
+ 
++isa-l.res: isa-l.h
++	rc /fo $@ isa-l.rc
++
+ {erasure_code}.c.obj:
+ 	$(CC) $(CFLAGS) /c -Fo$@ $?
+ {erasure_code}.asm.obj:
+@@ -231,6 +240,9 @@ ex = \
+ 	ec_simple_example.exe \
+ 	ec_piggyback_example.exe
+ 
++{examples\ec}.c.obj:
++	$(CC) $(CFLAGS) /c -Fo$@ $?
++
+ ex: lib $(ex)
+ 
+ $(ex): $(@B).obj
+@@ -303,6 +315,32 @@ progs: lib $(progs)
+ igzip.exe: programs\igzip_cli.obj
+ 	link /out:$@ $(LINKFLAGS) isa-l.lib $?
+ 
++isa-l.h:
++	@echo /**>> $@
++	@echo *  @file isa-l.h>> $@
++	@echo *  @brief Include for ISA-L library>> $@
++	@echo */>> $@
++	@echo.>> $@
++	@echo #ifndef _ISAL_H_>> $@
++	@echo #define _ISAL_H_>> $@
++	@echo.>> $@
++	@echo #define ISAL_MAJOR_VERSION 2 >> $@
++	@echo #define ISAL_MINOR_VERSION 30 >> $@
++	@echo #define ISAL_PATCH_VERSION 0 >> $@
++	@echo #define ISAL_MAKE_VERSION(maj, min, patch)  ((maj) * 0x10000 + (min) * 0x100 + (patch))>> $@
++	@echo #define ISAL_VERSION ISAL_MAKE_VERSION(ISAL_MAJOR_VERSION, ISAL_MINOR_VERSION, ISAL_PATCH_VERSION)>> $@
++	@echo.>> $@
++	@echo #ifndef RC_INVOKED>> $@
++	@echo #include ^<isa-l/crc.h^>>> $@
++	@echo #include ^<isa-l/crc64.h^>>> $@
++	@echo #include ^<isa-l/erasure_code.h^>>> $@
++	@echo #include ^<isa-l/gf_vect_mul.h^>>> $@
++	@echo #include ^<isa-l/igzip_lib.h^>>> $@
++	@echo #include ^<isa-l/mem_routines.h^>>> $@
++	@echo #include ^<isa-l/raid.h^>>> $@
++	@echo #endif // RC_INVOKED>> $@
++	@echo #endif //_ISAL_H_>> $@
++
+ clean:
+ 	-if exist *.obj del *.obj
+ 	-if exist bin\*.obj del bin\*.obj
+@@ -312,6 +350,7 @@ clean:
+ 	-if exist isa-l.lib del isa-l.lib
+ 	-if exist isa-l.dll del isa-l.dll
+ 	-if exist isa-l.exp del isa-l.exp
++	-if exist isa-l.res del isa-l.res
+ 
+ zlib.lib:
+ igzip_perf.exe:  zlib.lib
+diff --git a/igzip/igzip.c b/igzip/igzip.c
+index 65b441b..3ec6afd 100644
+--- a/igzip/igzip.c
++++ b/igzip/igzip.c
+@@ -1706,10 +1706,42 @@ int isal_deflate(struct isal_zstream *stream)
+ 	return ret;
+ }
+ 
++// Helper function to avoid code duplication.
++static void _zlib_header_in_buffer(struct isal_zstream *stream, uint8_t * buffer)
++{
++	uint8_t hist_bits, info, level, cmf, flg;
++	uint8_t dict_flag = 0;
++
++	if (stream->hist_bits == 0)	// default hist_bits
++		hist_bits = ISAL_DEF_MAX_HIST_BITS;
++	else
++		hist_bits = stream->hist_bits;
++	if (hist_bits > 8)
++		info = hist_bits - 8;
++	else
++		info = 0;	// For low window sizes ensure correct cmf flag.
++	if (stream->level == 0)
++		level = 0;	// Fastest algorithm
++	else
++		level = 1;	// ISA-L levels 1-3 are fast algorithms.
++
++	cmf = DEFLATE_METHOD | (info << 4);
++	flg = (level << 6) | dict_flag;
++	flg += 31 - ((256 * cmf + flg) % 31);
++	buffer[0] = cmf;
++	buffer[1] = flg;
++	return;
++}
++
+ static int write_stream_header_stateless(struct isal_zstream *stream)
+ {
+ 	uint32_t hdr_bytes;
+-	const uint8_t *hdr;
++	// Create a 10-byte buffer. Since the gzip header is almost fixed (9 of 10
++	// bytes are fixed) use it to initialize the buffer.
++	uint8_t buffer[10] = {
++		0x1f, 0x8b, 0x08, 0x00, 0x00,
++		0x00, 0x00, 0x00, 0x00, 0xff
++	};
+ 	uint32_t next_flag;
+ 
+ 	if (stream->internal_state.has_wrap_hdr)
+@@ -1717,12 +1749,12 @@ static int write_stream_header_stateless(struct isal_zstream *stream)
+ 
+ 	if (stream->gzip_flag == IGZIP_ZLIB) {
+ 		hdr_bytes = zlib_hdr_bytes;
+-		hdr = zlib_hdr;
++		_zlib_header_in_buffer(stream, buffer);
+ 		next_flag = IGZIP_ZLIB_NO_HDR;
+-
+ 	} else {
+ 		hdr_bytes = gzip_hdr_bytes;
+-		hdr = gzip_hdr;
++		if (stream->level == 0)
++			buffer[8] = 0x04;	// Fastest algorithm in xfl flag
+ 		next_flag = IGZIP_GZIP_NO_HDR;
+ 	}
+ 
+@@ -1732,7 +1764,7 @@ static int write_stream_header_stateless(struct isal_zstream *stream)
+ 	stream->avail_out -= hdr_bytes;
+ 	stream->total_out += hdr_bytes;
+ 
+-	memcpy(stream->next_out, hdr, hdr_bytes);
++	memcpy(stream->next_out, buffer, hdr_bytes);
+ 
+ 	stream->next_out += hdr_bytes;
+ 	stream->internal_state.has_wrap_hdr = 1;
+@@ -1746,17 +1778,23 @@ static void write_stream_header(struct isal_zstream *stream)
+ 	struct isal_zstate *state = &stream->internal_state;
+ 	int bytes_to_write;
+ 	uint32_t hdr_bytes;
+-	const uint8_t *hdr;
++	// Create a 10-byte buffer. Since the gzip header is almost fixed (9 of 10
++	// bytes are fixed) use it to initialize the buffer.
++	uint8_t buffer[10] = {
++		0x1f, 0x8b, 0x08, 0x00, 0x00,
++		0x00, 0x00, 0x00, 0x00, 0xff
++	};
+ 
+ 	if (stream->internal_state.has_wrap_hdr)
+ 		return;
+ 
+ 	if (stream->gzip_flag == IGZIP_ZLIB) {
+ 		hdr_bytes = zlib_hdr_bytes;
+-		hdr = zlib_hdr;
++		_zlib_header_in_buffer(stream, buffer);
+ 	} else {
++		if (stream->level == 0)
++			buffer[8] = 0x04;	// Fastest algorithm in xfl flag
+ 		hdr_bytes = gzip_hdr_bytes;
+-		hdr = gzip_hdr;
+ 	}
+ 
+ 	bytes_to_write = hdr_bytes;
+@@ -1765,7 +1803,7 @@ static void write_stream_header(struct isal_zstream *stream)
+ 	if (bytes_to_write > stream->avail_out)
+ 		bytes_to_write = stream->avail_out;
+ 
+-	memcpy(stream->next_out, hdr + state->count, bytes_to_write);
++	memcpy(stream->next_out, buffer + state->count, bytes_to_write);
+ 	state->count += bytes_to_write;
+ 
+ 	if (state->count == hdr_bytes) {
+diff --git a/tools/gen_nmake.mk b/tools/gen_nmake.mk
+index 8e6330d..b0ceb32 100644
+--- a/tools/gen_nmake.mk
++++ b/tools/gen_nmake.mk
+@@ -21,8 +21,8 @@ Makefile.nmake tst.nmake: FORCE
+ 	@echo 'INCLUDES   = $(INCLUDE)'	>> $@
+ 	@echo '# Modern asm feature level, consider upgrading nasm/yasm before decreasing feature_level'	>> $@
+ 	@echo 'FEAT_FLAGS = -DHAVE_AS_KNOWS_AVX512 -DAS_FEATURE_LEVEL=10'	>> $@
+-	@echo 'CFLAGS_REL = -O2 -DNDEBUG /Z7 /MD /Gy'		>> $@
+-	@echo 'CFLAGS_DBG = -Od -DDEBUG /Z7 /MDd'			>> $@
++	@echo 'CFLAGS_REL = -O2 -DNDEBUG /Z7 /Gy'		>> $@
++	@echo 'CFLAGS_DBG = -Od -DDEBUG /Z7'			>> $@
+ 	@echo 'LINKFLAGS  = -nologo -incremental:no -debug'	>> $@
+ 	@echo 'CFLAGS     = $$(CFLAGS_REL) -nologo -D_USE_MATH_DEFINES $$(FEAT_FLAGS) $$(INCLUDES) $$(D)'	>> $@
+ 	@echo 'AFLAGS     = -f win64 $$(FEAT_FLAGS) $$(INCLUDES) $$(D)'	>> $@
+@@ -31,8 +31,8 @@ Makefile.nmake tst.nmake: FORCE
+ 	@echo 'AS         = nasm'		>> $@
+ 	@echo ''			>> $@
+ 	@echo 'lib: bin static dll'	>> $@
+-	@echo 'static: bin isa-l_static.lib'	>> $@
+-	@echo 'dll: bin isa-l.dll'	>> $@
++	@echo 'static: bin isa-l_static.lib isa-l.h'	>> $@
++	@echo 'dll: bin isa-l.dll isa-l.h'	>> $@
+ 	@echo ''			>> $@
+ 	@echo 'bin: ; -mkdir $$@'	>> $@
+ 	@echo ''			>> $@
+@@ -41,11 +41,20 @@ Makefile.nmake tst.nmake: FORCE
+ 	@echo '$$?'			>> $@
+ 	@echo '<<'			>> $@
+ 	@echo ''			>> $@
++	@echo '!IF [rc] == 0'		>> $@
++	@echo 'isa-l.dll: isa-l.res'	>> $@
++	@echo '!ELSE'			>> $@
++	@echo '!MESSAGE Optionally install rc to set file version info' >> $@
++	@echo '!ENDIF'			>> $@
++	@echo ''			>> $@
+ 	@echo 'isa-l.dll: $$(objs)'	>> $@
+ 	@echo '	link -out:$$@ -dll -def:isa-l.def $$(LINKFLAGS) @<<'	>> $@
+ 	@echo '$$?'			>> $@
+ 	@echo '<<'			>> $@
+ 	@echo ''			>> $@
++	@echo 'isa-l.res: isa-l.h'	>> $@
++	@echo '	rc /fo $$@ isa-l.rc'	>> $@
++	@echo ''			>> $@
+ 	@$(foreach b, $(units), \
+ 		printf "{%s}.c.obj:\n\t\$$(CC) \$$(CFLAGS) /c -Fo\$$@ \$$?\n{%s}.asm.obj:\n\t\$$(AS) \$$(AFLAGS) -o \$$@ \$$?\n\n" $(b) $(b) >> $@; )
+ 	@echo ''			>> $@
+@@ -55,6 +64,8 @@ ifneq (,$(examples))
+ 	@$(foreach ex, $(notdir $(examples)), printf " %s\n\t%s.exe" \\ $(ex) >> $@; )
+ 	@echo ''			>> $@
+ 	@echo ''			>> $@
++	@$(foreach d, $(subst /,\\, $(sort $(patsubst %/,%,$(filter examples/%,$(dir $(examples)))))), \
++		printf "{%s}.c.obj:\n\t\$$(CC) \$$(CFLAGS) /c -Fo\$$@ \$$?\n\n" $(d) >> $@; )
+ 	@echo 'ex: lib $$(ex)'		>> $@
+ 	@echo ''			>> $@
+ 	@echo '$$(ex): $$(@B).obj'	>> $@
+@@ -97,6 +108,26 @@ endif
+ 	@$(foreach p, $(notdir $(bin_PROGRAMS)), \
+ 		printf "%s.exe: %s\n\tlink /out:\$$@ \$$(LINKFLAGS) isa-l.lib \$$?\n" $(p) $(subst /,\\,$(programs_$(p)_SOURCES:.c=.obj)) >> $@; )
+ 	@echo ''			>> $@
++	@echo 'isa-l.h:'		>> $@
++	@echo '	@echo /**>> $$@' >> $@
++	@echo '	@echo *  @file isa-l.h>> $$@' >> $@
++	@echo '	@echo *  @brief Include for ISA-L library>> $$@' >> $@
++	@echo '	@echo */>> $$@' >> $@
++	@echo '	@echo.>> $$@' >> $@
++	@echo '	@echo #ifndef _ISAL_H_>> $$@' >> $@
++	@echo '	@echo #define _ISAL_H_>> $$@' >> $@
++	@echo '	@echo.>> $$@' >> $@
++	@echo '#define.ISAL_MAJOR_VERSION.${version}' |  ${AWK} -F . '{print "\t@echo", $$1, $$2, $$3, ">> $$@"}' >> $@
++	@echo '#define.ISAL_MINOR_VERSION.${version}' |  ${AWK} -F . '{print "\t@echo", $$1, $$2, $$4, ">> $$@"}' >> $@
++	@echo '#define.ISAL_PATCH_VERSION.${version}' |  ${AWK} -F . '{print "\t@echo", $$1, $$2, $$5, ">> $$@"}' >> $@
++	@echo '	@echo #define ISAL_MAKE_VERSION(maj, min, patch)  ((maj) * 0x10000 + (min) * 0x100 + (patch))>> $$@' >> $@
++	@echo '	@echo #define ISAL_VERSION ISAL_MAKE_VERSION(ISAL_MAJOR_VERSION, ISAL_MINOR_VERSION, ISAL_PATCH_VERSION)>> $$@' >> $@
++	@echo '	@echo.>> $$@' >> $@
++	@echo '	@echo #ifndef RC_INVOKED>> $$@' >> $@
++	@for unit in $(sort $(extern_hdrs)); do echo "	@echo #include ^<isa-l/$$unit^>>> \$$@" | sed -e 's;include/;;' >> $@; done
++	@echo '	@echo #endif // RC_INVOKED>> $$@' >> $@
++	@echo '	@echo #endif //_ISAL_H_>> $$@' >> $@
++	@echo ''			>> $@
+ 	@echo 'clean:'					>> $@
+ 	@echo '	-if exist *.obj del *.obj'		>> $@
+ 	@echo '	-if exist bin\*.obj del bin\*.obj'	>> $@
+@@ -106,6 +137,7 @@ endif
+ 	@echo '	-if exist isa-l.lib del isa-l.lib'	>> $@
+ 	@echo '	-if exist isa-l.dll del isa-l.dll'	>> $@
+ 	@echo '	-if exist isa-l.exp del isa-l.exp'	>> $@
++	@echo '	-if exist isa-l.res del isa-l.res'	>> $@
+ 	@echo ''		>> $@
+ 	$(if $(findstring igzip,$(units)),@echo 'zlib.lib:'	>> $@ )
+ 	@cat $(foreach unit,$(units), $(unit)/Makefile.am)  | sed  \
+diff --git a/tools/nasm-filter.sh b/tools/nasm-filter.sh
+index 5ec9ba3..a8ac9d1 100755
+--- a/tools/nasm-filter.sh
++++ b/tools/nasm-filter.sh
+@@ -15,6 +15,11 @@ while [ -n "$*" ]; do
+ 	    shift
+ 	    shift
+ 	    ;;
++	-isysroot | -iframeworkwithsysroot | -iwithsysroot | -framework | -arch )
++	    # Unsupported options with arg
++	    shift
++	    shift
++	    ;;
+ 	--prefix* )
+ 	    # Supported options without arg
+ 	    options="$options $1"
+diff --git a/tools/yasm-filter.sh b/tools/yasm-filter.sh
+index c33952a..1d72031 100755
+--- a/tools/yasm-filter.sh
++++ b/tools/yasm-filter.sh
+@@ -10,6 +10,11 @@ while [ -n "$*" ]; do
+ 	    shift
+ 	    shift
+ 	    ;;
++	-isysroot | -iframeworkwithsysroot | -iwithsysroot | -framework | -arch )
++	    # Unsupported options with arg
++	    shift
++	    shift
++	    ;;
+ 	-I* | -i* | --prefix* )
+ 	    # Supported options without arg
+ 	    options="$options $1"

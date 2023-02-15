@@ -9,3 +9,6 @@ if errorlevel 1 exit 1
 
 copy isa-l.lib %LIBRARY_LIB%\isa-l.lib
 if errorlevel 1 exit 1
+
+copy isa-l.h %LIBRARY_INC%\isa-l.h
+if errorlevel 1 exit 1

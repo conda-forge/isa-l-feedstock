@@ -11,10 +11,10 @@ source:
         # Conda adds some CFLAGS to the environment which are not properly 
         # filtered by the original nasm-filter.sh
         # This patch also makes sure the nasm executable from the BUILD_PREFIX is used.
-    - nasm-filter.patch
+    - build_and_bugfix.patch
 
 build:
-  number: 4
+  number: 5
 
 
 requirements:
