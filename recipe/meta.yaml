@@ -14,20 +14,17 @@ source:
     - nasm-filter.patch
 
 build:
-  number: 4
+  number: 5
 
 
 requirements:
   build:
     # igzip needs to be compiled with 7.5.0 to prevent an issue:
     # https://github.com/conda-forge/isa-l-feedstock/issues/7
-    - {{ compiler('c') }}  # [not linux]
-    - gcc_linux-64 ==7.5.0  # [linux]
+    - {{ compiler('c') }}
     - nasm  # [not osx]
     # Osx needs some flags that are available from 2.14 on
     - nasm >=2.14  # [osx]
-    - autoconf  # [unix]
-    - automake  # [unix]
     - libtool   # [unix]
     - make      # [unix]
 
