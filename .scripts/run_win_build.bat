@@ -37,6 +37,9 @@ if EXIST LICENSE.txt (
     echo Copying feedstock license
     copy LICENSE.txt "recipe\\recipe-scripts-license.txt"
 )
+if NOT [%HOST_PLATFORM%] == [%BUILD_PLATFORM%] (
+    set "EXTRA_CB_OPTIONS=%EXTRA_CB_OPTIONS% --no-test"
+)
 
 call :end_group
 
@@ -57,7 +60,7 @@ if /i "%CI%" == "github_actions" (
     set "TEMP=%RUNNER_TEMP%"
 )
 if /i "%CI%" == "azure" (
-    set "FEEDSTOCK_NAME=%BUILD_REPOSITORY_NAME%"
+    set "FEEDSTOCK_NAME=%BUILD_REPOSITORY_NAME:*/=%"
     set "GIT_BRANCH=%BUILD_SOURCEBRANCHNAME%"
     if /i "%BUILD_REASON%" == "PullRequest" (
         set "IS_PR_BUILD=True"
