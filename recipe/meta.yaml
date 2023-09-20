@@ -14,7 +14,7 @@ source:
     - nasm-filter.patch
 
 build:
-  number: 4
+  number: 5
 
 
 requirements:
@@ -26,8 +26,6 @@ requirements:
     - nasm  # [not osx]
     # Osx needs some flags that are available from 2.14 on
     - nasm >=2.14  # [osx]
-    - autoconf  # [unix]
-    - automake  # [unix]
     - libtool   # [unix]
     - make      # [unix]
 
