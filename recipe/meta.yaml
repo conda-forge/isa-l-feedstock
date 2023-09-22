@@ -18,7 +18,7 @@ build:
   # Build script with autotools for OSX as the simpler way does not correctly
   # install the libraries.
   script: "export AS=nasm && ./autogen.sh && ./configure --prefix=${PREFIX} && make -j${CPU_COUNT} ${VERBOSE_AT} && make install && rm -rf ${PREFIX}/share && rm ${PREFIX}/lib/libisal.a"  # [osx]
-  script: "make -d -j${CPU_COUNT} -f Makefile.unx CC=${CC} ${VERBOSE_AT} && && make -d -j${CPU_COUNT} -f Makefile.unx CC=${CC} prefix=${PREFIX} install && rm -rf ${PREFIX}/share && rm ${PREFIX}/lib/libisal.a"  # [linux]
+  script: "make -d -j${CPU_COUNT} -f Makefile.unx CC=${CC} ${VERBOSE_AT} && make -d -j${CPU_COUNT} -f Makefile.unx CC=${CC} prefix=${PREFIX} install && rm -rf ${PREFIX}/share && rm ${PREFIX}/lib/libisal.a"  # [linux]
 
 requirements:
   build:
