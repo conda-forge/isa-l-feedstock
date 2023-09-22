@@ -14,8 +14,11 @@ source:
     - nasm-filter.patch
 
 build:
-  number: 5
-
+  number: 6
+  # Build script with autotools for OSX as the simpler way does not correctly
+  # install the libraries.
+  script: "export AS=nasm && ./autogen.sh && ./configure --prefix=${PREFIX} && make -j${CPU_COUNT} ${VERBOSE_AT} && make install && rm -rf ${PREFIX}/share && rm ${PREFIX}/lib/libisal.a"  # [osx]
+  script: "make -d -j${CPU_COUNT} -f Makefile.unx CC=${CC} ${VERBOSE_AT} && make -d -j${CPU_COUNT} -f Makefile.unx CC=${CC} prefix=${PREFIX} install && rm -rf ${PREFIX}/share && rm ${PREFIX}/lib/libisal.a"  # [linux]
 
 requirements:
   build:
@@ -25,6 +28,8 @@ requirements:
     - nasm  # [not osx]
     # Osx needs some flags that are available from 2.14 on
     - nasm >=2.14  # [osx]
+    - autoconf  # [osx]
+    - automake  # [osx]
     - libtool   # [unix]
     - make      # [unix]
 
