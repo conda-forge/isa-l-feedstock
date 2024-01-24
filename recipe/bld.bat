@@ -1,6 +1,9 @@
 nmake /f Makefile.nmake
 if errorlevel 1 exit 1
 
+nmake /f Makefile.nmake isa-l.h
+if errorlevel 1 exit 1
+
 xcopy include %LIBRARY_INC%\isa-l\ /E /H /F
 if errorlevel 1 exit 1
 
@@ -9,3 +12,5 @@ if errorlevel 1 exit 1
 
 copy isa-l.lib %LIBRARY_LIB%\isa-l.lib
 if errorlevel 1 exit 1
+
+copy isa-l.h %LIBRARY_INC%\isa-l.h
