@@ -14,7 +14,7 @@ source:
     - nasm-filter.patch
 
 build:
-  number: 0
+  number: 1
   # Build script with autotools for OSX as the simpler way does not correctly
   # install the libraries.
   script: "export AS=nasm && ./autogen.sh && ./configure --prefix=${PREFIX} && make -j${CPU_COUNT} ${VERBOSE_AT} && make install && rm -rf ${PREFIX}/share && rm ${PREFIX}/lib/libisal.a"  # [osx]
