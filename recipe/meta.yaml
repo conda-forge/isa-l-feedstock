@@ -8,28 +8,38 @@ source:
   url: https://github.com/intel/isa-l/archive/v{{ version }}.tar.gz
   sha256: e218b7b2e241cfb8e8b68f54a6e5eed80968cc387c4b1af03708b54e9fb236f1
   patches:
-        # Conda adds some CFLAGS to the environment which are not properly 
-        # filtered by the original nasm-filter.sh
-        # This patch also makes sure the nasm executable from the BUILD_PREFIX is used.
+    # https://github.com/intel/isa-l/commit/1b1ee1e18f5bb4d91e3839405a8557a64a3b2581
+    - patches/fix_erasure_code_wrong_dtype_ppc64le.patch
+    # https://github.com/intel/isa-l/commit/4be96e2437d1aa010978fba54a1b76dfac520961
+    - patches/fix_isal_dflate_icf_finish_for_aarch.patch
+    # https://github.com/intel/isa-l/commit/f1b144bbab7cd1f603565b3b7f92bfb47b86e646
+    - patches/fold_constants_correctly_for_aarch.patch
+    # https://github.com/intel/isa-l/commit/38279f5e9e6455d16b3e97c387f209db56fa994c
+    - patches/avoid_using_X18_register_on_aarch.patch
+    # https://github.com/intel/isa-l/commit/dbaf284e112bea1b90983772a3164e794b923aaf
+    - patches/fix_wasm_spport_on_aarch.patch
+    # Conda adds some CFLAGS to the environment which are not properly
+    # filtered by the original nasm-filter.sh
+    # This patch also makes sure the nasm executable from the BUILD_PREFIX is used.
     - nasm-filter.patch
 
 build:
   number: 1
-  # Build script with autotools for OSX as the simpler way does not correctly
-  # install the libraries.
-  script: "export AS=nasm && ./autogen.sh && ./configure --prefix=${PREFIX} && make -j${CPU_COUNT} ${VERBOSE_AT} && make install && rm -rf ${PREFIX}/share && rm ${PREFIX}/lib/libisal.a"  # [osx]
-  script: "make -d -j${CPU_COUNT} -f Makefile.unx CC=${CC} ${VERBOSE_AT} && make -d -j${CPU_COUNT} -f Makefile.unx CC=${CC} prefix=${PREFIX} install && rm -rf ${PREFIX}/share && rm ${PREFIX}/lib/libisal.a"  # [linux]
+  run_exports:
+    # Just a guess feel free to adjust
+    - {{ pin_subpackage('isa-l', max_pin='x.x') }}
 
 requirements:
   build:
     # igzip needs to be compiled with 7.5.0 to prevent an issue:
     # https://github.com/conda-forge/isa-l-feedstock/issues/7
     - {{ compiler('c') }}
+    - {{ stdlib('c') }}
     - nasm  # [not osx]
     # Osx needs some flags that are available from 2.14 on
     - nasm >=2.14  # [osx]
-    - autoconf  # [osx]
-    - automake  # [osx]
+    - autoconf  # [unix]
+    - automake  # [unix]
     - libtool   # [unix]
     - make      # [unix]
 
@@ -38,7 +48,7 @@ test:
     - LICENSE
   commands:
     - igzip --help  # [unix]
-        # Test compression and decompression. 
+        # Test compression and decompression.
     - igzip -k LICENSE  # [unix]
         # Original file should be larger than compressed file.
     - bash -c '[ $(stat -c %s LICENSE) -gt $(stat -c %s LICENSE.gz) ]'  # [unix]
