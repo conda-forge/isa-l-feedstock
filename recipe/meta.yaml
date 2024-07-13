@@ -35,9 +35,8 @@ requirements:
     # https://github.com/conda-forge/isa-l-feedstock/issues/7
     - {{ compiler('c') }}
     - {{ stdlib('c') }}
-    - nasm  # [not osx]
     # Osx needs some flags that are available from 2.14 on
-    - nasm >=2.14  # [osx]
+    - nasm >=2.14
     - autoconf  # [unix]
     - automake  # [unix]
     - libtool   # [unix]
