@@ -20,11 +20,8 @@ build:
 
 requirements:
   build:
-    # igzip needs to be compiled with 7.5.0 to prevent an issue:
-    # https://github.com/conda-forge/isa-l-feedstock/issues/7
     - {{ compiler('c') }}
     - {{ stdlib('c') }}
-    # Osx needs some flags that are available from 2.14 on
     - nasm >=2.14
     - autoconf  # [unix]
     - automake  # [unix]
