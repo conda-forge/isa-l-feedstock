@@ -8,16 +8,6 @@ source:
   url: https://github.com/intel/isa-l/archive/v{{ version }}.tar.gz
   sha256: 5c9da8f2024c1949457e91226d73cd71e52ec4574803899f0d600ee9e58c3561
   patches:
-    # https://github.com/intel/isa-l/commit/1b1ee1e18f5bb4d91e3839405a8557a64a3b2581
-    - patches/fix_erasure_code_wrong_dtype_ppc64le.patch
-    # https://github.com/intel/isa-l/commit/4be96e2437d1aa010978fba54a1b76dfac520961
-    - patches/fix_isal_dflate_icf_finish_for_aarch.patch
-    # https://github.com/intel/isa-l/commit/f1b144bbab7cd1f603565b3b7f92bfb47b86e646
-    - patches/fold_constants_correctly_for_aarch.patch
-    # https://github.com/intel/isa-l/commit/38279f5e9e6455d16b3e97c387f209db56fa994c
-    - patches/avoid_using_X18_register_on_aarch.patch
-    # https://github.com/intel/isa-l/commit/dbaf284e112bea1b90983772a3164e794b923aaf
-    - patches/fix_wasm_spport_on_aarch.patch
     # Conda adds some CFLAGS to the environment which are not properly
     # filtered by the original nasm-filter.sh
     # This patch also makes sure the nasm executable from the BUILD_PREFIX is used.
