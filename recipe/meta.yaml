@@ -7,6 +7,11 @@ package:
 source:
   url: https://github.com/intel/isa-l/archive/v{{ version }}.tar.gz
   sha256: 5c9da8f2024c1949457e91226d73cd71e52ec4574803899f0d600ee9e58c3561
+  patches:
+    # Conda adds some CFLAGS to the environment which are not properly
+    # filtered by the original nasm-filter.sh
+    # This patch also makes sure the nasm executable from the BUILD_PREFIX is used.
+    - nasm-filter.patch
 
 build:
   number: 0
