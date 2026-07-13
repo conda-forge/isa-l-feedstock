@@ -1,8 +1,8 @@
 set -ex
-export AS=nasm
+unset AS  # Let script determine assembler itself
 # Build script need to be regenerated for cross compilation support
 ./autogen.sh
-./configure --prefix=${PREFIX}
+./configure --prefix=${PREFIX} --enable-programs
 make -j${CPU_COUNT}
 make -j${CPU_COUNT} install
 
