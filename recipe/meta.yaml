@@ -1,4 +1,4 @@
-{% set version = "2.32.1" %}
+{% set version = "2.32.1-post.1" %}
 
 package:
   name: isa-l
@@ -6,7 +6,7 @@ package:
 
 source:
   url: https://github.com/intel/isa-l/archive/v{{ version }}.tar.gz
-  sha256: d9f7179ab0e14a3db9b610fac22793854a1435e8423ec9ce07f4cbedc5f92f5e
+  sha256: 1fe0454327232ade0c4d25f44c694816f9302a59360a449486d39996d213988f
   patches:
     # Conda adds some CFLAGS to the environment which are not properly
     # filtered by the original nasm-filter.sh
